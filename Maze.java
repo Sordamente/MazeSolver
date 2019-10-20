@@ -74,32 +74,24 @@ public class Maze {
 			//And it helps us to create the path itself
 			ArrayList<Node> successors = new ArrayList<Node>();
 			
-			if (least.x > 0) { //Going to the left
-				Node child = new Node(); //It might not actually be open but this parameter is not checked
-				child.x = least.x - 1;
-				child.y = least.y;
-				if (this.maze[child.y * this.width + child.x].name != "WALL") successors.add(child);
-			}
-			
-			if (least.x < this.width - 1) { //Going to the right
+			//This is a condensed way of having four if statements checking the four squares around the node
+			//Think of the for loop as just rotating a line around the node in 90 degree increments
+			for (double i = 0; i < Math.PI * 2; i += Math.PI / 2) {
 				Node child = new Node();
-				child.x = least.x + 1;
-				child.y = least.y;
-				if (this.maze[child.y * this.width + child.x].name != "WALL") successors.add(child);
-			}
-			
-			if (least.y > 0) { //Going up
-				Node child = new Node();
-				child.x = least.x;
-				child.y = least.y - 1;
-				if (this.maze[child.y * this.width + child.x].name != "WALL") successors.add(child);
-			}
-			
-			if (least.y < this.height - 1) { //Going down
-				Node child = new Node();
-				child.x = least.x;
-				child.y = least.y + 1;
-				if (this.maze[child.y * this.width + child.x].name != "WALL") successors.add(child);
+				
+				//Using basic trig we know the position of the node at that angle
+				//Casting it to an int knocks two birds with one stone
+				//1. We can add the numbers together (because you can't normally add a double and an int)
+				//2. We truncate the double, which is useful because Math.PI is only accurate to like 16 digits, so error is removed
+				child.x = least.x + (int) (Math.cos(i));
+				child.y = least.y + (int) (Math.sin(i));
+				
+				//Now we check that this box is within the constraints of the board and that it isn't a wall
+				if (child.x < 0 || child.x > this.width - 1 || child.y < 0 || child.y > this.height - 1) continue;
+				if (this.maze[child.y * this.width + child.x].name == "WALL") continue;
+				
+				//If it passes both tests it gets added to the list of nodes with which the next loop will deal
+				successors.add(child);
 			}
 			
 			//For every child, figure out if it fits better than everything else; otherwise trash it
