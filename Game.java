@@ -14,13 +14,16 @@ public class Game {
 		this.sol = this.maze.solve();
 		
 		//Determine if there is a solution
-		if (this.sol == null) System.out.println("No Solution");
-		else System.out.println("Solution Found");
+		if (this.sol == null) { System.out.println("There is no solution to this maze"); return; }
 		
 		//Create an array with the solution
 		//This is built to withstand no solution cases so that little validation is required
 		ArrayList<Node> path = new ArrayList<Node>();
 		if (this.sol != null) for (Node par = this.sol; par.parent != null; par = par.parent) path.add(par);
+		
+		//Print some statistics
+		System.out.println("The program looked in " + this.maze.count + " locations to find a path.");
+		System.out.println("The path is " + path.size() + " moves long.");
 		
 		//Print out the solved (or unsolved) maze
 		System.out.println(this.maze.toString(path));
