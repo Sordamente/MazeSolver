@@ -1,80 +1,71 @@
 package com.tomer.maze;
 
 import java.util.ArrayList;
-import java.util.Scanner;
 
 public class Maze {
 	private Node[] maze;
 	private int width;
 	private int height;
-	private String heuristic;
-	public int count = 0;
+	public ArrayList<Node> checked;
+	public ArrayList<Node> solution;
 	
-	public Maze() {
-		//Set up input from the CLI
-		Scanner sc = new Scanner(System.in);
-		
-		//Ask the user for the maze's dimensions
-		System.out.println("Enter the maze dimensions ('width height'), please :)");
-		String[] dims = sc.nextLine().split(" ");
-		this.maze = new Node[Integer.parseInt(dims[1]) * Integer.parseInt(dims[0])];
-		this.width = Integer.parseInt(dims[0]);
-		this.height = Integer.parseInt(dims[1]);
-		
-		//Take input line by line and add to the maze
-		//Please note that there is little validating of inputs going on
-		//It is assumed that the user is of good intention (in this case, it is likely to be true)
-		System.out.println("Now, enter the maze row by row ('#' is wall, '.' is air, 'o' is start, '*' is end).");
-		for (int i = 0; i < this.height; i++) {
-			char[] strings = sc.nextLine().toCharArray();
-			if (strings.length == this.width) for (int j = 0; j < this.width; j++) maze[i * this.width + j] = Node.fromChar(strings[j]);
-			else { i--; System.out.println("Input didn't match desired width"); }
-		}
-		
-		System.out.println("Select a heuristic mode for A* (Manhattan, Euclidian, Diagonal, Proximity). Defaults to Dijkstra");
-		this.heuristic = sc.nextLine();
-		
-		//Close the input stream
-		//If we don't do this it could stay open past this program's termination (kernel / implementation dependent)
-		//However, this isn't a major concern and is included generally as a good habit
-		sc.close();
+	public Maze(int width, int height, Node[] maze) {
+		//Create a maze object
+		this.width = width;
+		this.height = height;
+		this.maze = maze;
 	}
+
+	//Some miscellaneous getters for the maze
+	public Node[] getMaze() { return this.maze; }
+	public int getWidth() { return this.width; }
+	public int getHeight() { return this.height; }
 	
-	public Node solve() {
+	public void solve(String heuristic) {
+		//Reset the solution arrays
+		this.checked = null;
+		this.solution = null;
+
 		//Find the start in the maze
 		Node start = new Node();
 		for (int i = 0; i < this.height; i++)
 			for (int j = 0; j < this.width; j++)
-				if (this.maze[i * this.width + j].name == "START") { start.x = j; start.y = i; }
+				if (this.maze[i * this.width + j].name == "START") { start.x = j; start.y = i; start.name = "START"; }
 		
 		//Find the end in the maze
 		Node end = new Node();
 		for (int i = 0; i < this.height; i++)
 			for (int j = 0; j < this.width; j++)
-				if (this.maze[i * this.width + j].name == "END") { end.x = j; end.y = i; }
+				if (this.maze[i * this.width + j].name == "END") { end.x = j; end.y = i; end.name = "END"; }
 		
-		//We go backwards from end to start
-		//This is because, if we want to animate pathfinding, A* has the end as its latest child
-		//Therefore, we want to end at the start so that with each layer we move closer to the end
-		return aStar(end, start);
+		if (start.name != "START" || end.name != "END") return;
+
+		//Probably the most important line
+		//Use A* to solve the maze, and unload the solution into an ArrayList
+		Node sol = aStar(start, end, heuristic);
+		if (sol == null) return;
+		this.solution = new ArrayList<Node>();
+		solution.add(start);
+		for (Node n = sol; n.parent != null; n = n.parent) solution.add(n);
 	}
 	
-	private Node aStar(Node start, Node end) {
+	private Node aStar(Node start, Node end, String heuristic) {
 		//Set up flexible arrays for A*
 		ArrayList<Node> open = new ArrayList<Node>();
 		ArrayList<Node> close = new ArrayList<Node>();
+		this.checked = new ArrayList<Node>();
 		
 		//Add in the first location
 		open.add(start);
 		
 		//While there are potential solutions
 		while (!open.isEmpty()) {
-			this.count++;
-			//Find the node in open with the best fit on the final path
+			//Find the node in open that is the closest to the end location (estimated using heuristics)
 			int leastInd = 0;
-			for (int i = 0; i < open.size(); i++) if (open.get(i).f < open.get(leastInd).f) leastInd = i;
-			Node least = open.remove(leastInd); //Remove that node from open to stop it being selected again
-			
+			for (int i = 0; i < open.size(); i++) if (open.get(i).h < open.get(leastInd).h) leastInd = i;
+			Node least = open.remove(leastInd); //Remove that node from open to stop it being checked again
+			this.checked.add(least);
+
 			//Now we want to check the nodes around that node
 			//This both helps us find potentially better fits
 			//And it helps us to create the path itself
@@ -103,18 +94,25 @@ public class Maze {
 			//For every child, figure out if it fits better than everything else; otherwise trash it
 			point: for (Node suc : successors) {
 				suc.parent = least;
-				if (suc.x == end.x && suc.y == end.y) return suc; //We found what A* considers the best path!
+				if (suc.x == end.x && suc.y == end.y) { this.checked.add(suc); return suc; } //We found what A* considers the best path!
 				
+				//First, if we've ever checked this point before, lets not try again.
+				for (Node comp : close) if (comp.x == suc.x && comp.y == suc.y) continue point;
+				
+				//Otherwise, lets find the g and h values for the total fitness of the node.
 				suc.g = least.g + 1; //Distance to start of path (this value is always accurate and not estimated)
-				suc.h = this.approxDist(suc, end, this.heuristic); //Find the h value
+				suc.h = this.approxDist(suc, end, heuristic); //Find the h value
 				
-				suc.f = suc.g + suc.h; //Total fitness value
-				//Note that "f" is not a nessessary value to store because you can always find it using g and h
-				//However, due to the number of times we use the total fitness, it is likely more efficient to only do that once per node
+				//Note that the total fitness value is calculated by adding g and h together.
 				
 				//Filter the children in order to weed out ones that have fitnesses that aren't useful
-				for (Node comp : close) if (comp.x == suc.x && comp.y == suc.y) continue point;
-				for (Node comp : open) if (comp.f < suc.f || (comp.f == suc.f && comp.x == suc.x && comp.y == suc.y)) continue point;
+				//This means that we ignore the point if:
+				//We are already waiting to check a point with those coordinates, and that point has better (or equal) fitness values
+				//When this check is combined with the method of finding the best point in open, it kills three birds with one stone:
+				//1. Heuristic tiebreakers. Total fitness checks happen before the point is added so we don't waste time checking useless points
+				//2. No two points in the same location will ever be checked, ever. This constrains the number of checks to the number of acessible open spots in the maze at most
+				//3. Only the best point is chosen to check each time. This way we, using anything but Dijkstra, we can arrive at the final path in an almost minimal number of checks
+				for (Node comp : open) if (comp.h+comp.g <= suc.h+suc.g && comp.x == suc.x && comp.y == suc.y) continue point;
 				
 				//It passed! It is a potential candidate for point on the path, so lets put it in open
 				open.add(suc);
@@ -124,7 +122,7 @@ public class Maze {
 			close.add(least);
 		}
 		
-		return null;
+		return null; //No solution, sorry.
 	}
 	
 	private int approxDist(Node pt1, Node pt2, String heuristic) {
@@ -150,17 +148,15 @@ public class Maze {
 		default: return 0;
 		}
 	}
-	
-	public String toString(ArrayList<Node> path) {
+
+	public String toString() {
 		//This function's basic purpose is to convert the maze into a string
 		//This is done using the newline character to concatenate the maze's rows
-		//Also, the solved path is overlayed over the maze in the form of the letter P
 		String fin = "";
 		
 		for (int i = 0; i < this.height; i++) {
 			for (int j = 0; j < this.width; j++) {
 				String adder = this.maze[i * this.width + j].toString();
-				if (path != null) for (Node n : path) if (n.x == j && n.y == i) adder = "P";
 				fin += adder;
 			}
 			fin += "\n";
