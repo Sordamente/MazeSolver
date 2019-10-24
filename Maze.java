@@ -40,16 +40,25 @@ public class Maze {
 		
 		if (start.name != "START" || end.name != "END") return;
 
+		ArrayList<Node> ports = new ArrayList<Node>();
+		for (int i = 0; i < this.height; i++)
+			for (int j = 0; j < this.width; j++)
+				if (this.maze[i * this.width + j].name == "PORT") {
+					Node n = Node.fromChar('@');
+					n.x = j; n.y = i;
+					ports.add(n);
+				}
+
 		//Probably the most important line
 		//Use A* to solve the maze, and unload the solution into an ArrayList
-		Node sol = aStar(start, end, heuristic);
+		Node sol = aStar(start, end, ports, heuristic);
 		if (sol == null) return;
 		this.solution = new ArrayList<Node>();
 		solution.add(start);
 		for (Node n = sol; n.parent != null; n = n.parent) solution.add(n);
 	}
 	
-	private Node aStar(Node start, Node end, String heuristic) {
+	private Node aStar(Node start, Node end, ArrayList<Node> ports, String heuristic) {
 		//Set up flexible arrays for A*
 		ArrayList<Node> open = new ArrayList<Node>();
 		ArrayList<Node> close = new ArrayList<Node>();
@@ -88,12 +97,19 @@ public class Maze {
 				if (this.maze[child.y * this.width + child.x].name == "WALL") continue;
 				
 				//If it passes both tests it gets added to the list of nodes with which the next loop will deal
+				child.parent = least;
 				successors.add(child);
+
+				//Check teleporters :)
+				if (this.maze[child.y * this.width + child.x].name == "PORT") for (Node n : ports) {
+					Node port = Node.fromChar('@');
+					port.x = n.x; port.y = n.y; port.parent = child;
+					successors.add(port);
+				}
 			}
 			
 			//For every child, figure out if it fits better than everything else; otherwise trash it
 			point: for (Node suc : successors) {
-				suc.parent = least;
 				if (suc.x == end.x && suc.y == end.y) { this.checked.add(suc); return suc; } //We found what A* considers the best path!
 				
 				//First, if we've ever checked this point before, lets not try again.

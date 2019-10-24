@@ -19,17 +19,18 @@ public class Node {
 	}
 
 	public void startEndRotate() {
-		//When you right click, we want to rotate between the end, start, and nothing
-		if (this.name == "END") this.name = "START";
-		else if (this.name == "START") this.name = "OPEN";
-		else this.name = "END";
+		//When you right click, we want to rotate between the end, start, and a teleport pad
+		if (this.name == "PORT") this.name = "START";
+		else if (this.name == "START") this.name = "END";
+		else this.name = "PORT";
 	}
 
 	public Color getColor() {
 		//To display the node in the GUI
 		if (this.name == "WALL") return Color.DARK_GRAY;
 		if (this.name == "OPEN") return Color.WHITE;
-		if (this.name == "END") return Color.ORANGE;
+		if (this.name == "END") return Color.MAGENTA;
+		if (this.name == "PORT") return Color.CYAN;
 		return Color.GREEN;
 	}
 	
@@ -38,16 +39,17 @@ public class Node {
 		if (this.name == "WALL") return "#";
 		if (this.name == "OPEN") return ".";
 		if (this.name == "START") return "o";
+		if (this.name == "PORT") return "@";
 		return "*";
 	}
 	
 	public static Node fromChar(char type) {
 		//When importing the maze from a file
 		Node n = new Node();
-		if (type == '#') n.name = "WALL";
 		if (type == '.') n.name = "OPEN";
 		if (type == 'o') n.name = "START";
 		if (type == '*') n.name = "END";
+		if (type == '@') n.name = "PORT";
 		return n;
 	}
 }

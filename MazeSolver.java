@@ -222,9 +222,10 @@ public class MazeSolver {
 	public static void updateInfo() {
 		//This tooltip supports HTML, yay! The parts are broken up here for readability.
 		String instr1 = "<h3>Instructions:</h3> Create a maze (or resize one) by entering a size (width x height) and clicking 'Size', and save by, well, clicking 'Save'<br>";
-		String instr2 = "Left click on a square to swap between wall (black) and air (white), and right click to rotate between air, start (green), and end (orange).<br>";
-		String instr3 = (maze != null && maze.solution != null ? "<h3>Stats:</h3> Solving with the method "+mode+" took "+maze.checked.size()+" checks to solve a " + maze.solution.size() + " long path." : "<h3>This maze is not solvable.</h3>");
-		info.setToolTipText("<html>"+instr1+instr2+instr3+"</html>");
+		String instr2 = "Left click on a square to swap between wall (black) and air (white), and right click to rotate between a portal (cyan), start (green), and end (magenta).<br>";
+		String instr3 = "Please note that selecting a heuristic mode with a maze with portals may cause a nonminimized solution to be found.<br>";
+		String instr4 = (maze != null && maze.solution != null ? "<h3>Stats:</h3> Solving with the method "+mode+" took "+maze.checked.size()+" checks to solve a " + maze.solution.size() + " long path." : "<h3>This maze is not solvable.</h3>");
+		info.setToolTipText("<html>"+instr1+instr2+instr3+instr4+"</html>");
 	}
 
 	public static Maze genEmptyMaze(int wid, int hei) {
