@@ -1,5 +1,5 @@
 # MazeSolver
-This is a basic A* powered maze making and solving program, assigned to the controls rookies at GRT as a test.
+This is a basic A* powered maze making and solving program, assigned to the controls rookies at GRT (of the 2019-20 school year) as a test.
 You can read some test cases below.
 The task was to make a basic maze solving program, and this is an optimized version of that but with a GUI and portals.
 
